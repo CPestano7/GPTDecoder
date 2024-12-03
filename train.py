@@ -108,6 +108,10 @@ class TrainingLoop:
 
         train_iter = iter(train_loader)
 
+        # create dictionaries to store losses
+        train_dict = {}
+        val_dict = {}
+
         for epoch in range(self.start_epoch, self.epochs):
             try:
                 Xb, Yb, mask = next(train_iter)
@@ -125,13 +129,23 @@ class TrainingLoop:
             self.optimizer.step()
 
             # Evaluate and save model periodically
+            # Additionally, add the losses to the dictionaries
             if epoch % self.eval_interval == 0:
                 losses = self.estimate_loss(train_loader, val_loader)
                 logger.info(f"For epoch {epoch}: Train loss-> {losses['train']} | Val loss-> {losses['val']}")
 
+                train_dict[epoch] = losses['train']
+                val_dict[epoch] = losses['val']
+                # logger.info(f"Train dict: {train_dict}")
+                # logger.info(f"Val dict: {val_dict}")
                 # Save model if validation loss improves
                 if losses['val'] < self.best_val_loss:
                     self.best_val_loss = losses['val']
                     self.save_checkpoint(epoch=epoch, save_path=save_model_path, is_best=True)
                 else:
                     self.save_checkpoint(epoch=epoch, save_path=save_model_path, is_best=False)
+                    
+        # return the dictionaries
+        return train_dict, val_dict
+
+

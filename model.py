@@ -71,6 +71,8 @@ class FeedForwardLayer(nn.Module):
         return out
 
 
+
+
 class Block(nn.Module):
 
     def __init__(self, n_embds: int, num_heads: int, dropout: float) -> None:
@@ -80,13 +82,21 @@ class Block(nn.Module):
         self.ffw_layer = FeedForwardLayer(n_embds, dropout)
         self.ln1 = nn.LayerNorm(n_embds)
         self.ln2 = nn.LayerNorm(n_embds)
-
+    #pre-LN work: inputs of attention and FFW layers are normalized with the original outputs added after the main layers 
     def forward(self, x, mask=None):
         # Apply multi-head attention and add residual connection
         x = x + self.multi_headed_attn(self.ln1(x), mask)
         # Apply feed-forward network and add residual connection
         x = x + self.ffw_layer(self.ln2(x))
         return x
+
+    #post-LN work: skip connection is added to Self-attention and FFW outputs and result is layer normalized
+    # def forward(self, x, mask=None):
+    #     # Apply multi-head attention and add residual connection, then layer normalized
+    #     x = self.ln1(x + self.multi_headed_attn(x, mask))
+    #     # Apply feed-forward network and add residual connection, then layer normalized
+    #     x = self.ln2(x + self.ffw_layer(x))
+    #     return x
 
 
 class GPTDecoder(nn.Module):
@@ -105,7 +115,7 @@ class GPTDecoder(nn.Module):
     def _initialise_model_params(self, model_params: Dict) -> None:
 
         self.vocab_size = model_params.get("vocab_size")
-        self.n_embds = model_params.get("num_embeddings")
+        self.n_embds = model_params.get("num_embeddings") 
         self.block_size = model_params.get("block_size")
         self.n_heads = model_params.get("num_heads")
         self.n_layers = model_params.get("num_layers")
@@ -127,6 +137,8 @@ class GPTDecoder(nn.Module):
             x = block(x, mask)  # Pass mask to each block individually
 
         layer_norm_out = self.layernorm(x)  # (B, T, n_embds)
+    
+
 
         # Pooling to get a single vector per sequence for classification
         pooled_output = layer_norm_out.mean(dim=1)  # Average pooling across T dimension
