@@ -128,3 +128,4 @@ class CustomDataLoader:
         """
         self.val_loader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=shuffle, collate_fn=self.collate_fn)
         return self.val_loader
+
