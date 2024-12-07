@@ -213,7 +213,7 @@ class Block(nn.Module):
         return x
 
         #post-LN work: skip connection is added to Self-attention and FFW outputs and result is layer normalized
-        # # Apply multi-head attention and add residual connection, then layer normalized
+        # Apply multi-head attention and add residual connection, then layer normalized
         # x = self.ln1(x + self.multi_headed_attn(x, mask))
         # # Apply feed-forward network and add residual connection, then layer normalized
         # x = self.ln2(x + self.ffw_layer(x))
@@ -320,12 +320,15 @@ class GPTDecoder(nn.Module):
         for block in self.blocks:
             x = block(x, mask)  # Pass mask to each block individually
 
-        layer_norm_out = self.layernorm(x)  # (B, T, n_embds)
-    
+        # version with an additional layer normalization before the classifier
+        # layer_norm_out = self.layernorm(x)  # (B, T, n_embds)
+        # # Pooling to get a single vector per sequence for classification
+        # pooled_output = layer_norm_out.mean(dim=1)  # Average pooling across T dimension
 
-
+        # version with no additional layer normalization before the classifier
         # Pooling to get a single vector per sequence for classification
-        pooled_output = layer_norm_out.mean(dim=1)  # Average pooling across T dimension
+        pooled_output = x.mean(dim=1)  # Average pooling across T dimension
+
 
         logits = self.classifier(pooled_output)  # B, n_embds -> B, num_classes
 
