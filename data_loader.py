@@ -72,13 +72,14 @@ class CustomTextDataset(Dataset):
 
 
 class CustomDataLoader:
-    def __init__(self, train_df, val_df, text_col: int, label_col: int, batch_size: int):
+    def __init__(self, train_df, val_df, test_df, text_col: int, label_col: int, batch_size: int):
         """
         Custom DataLoader for train and validation datasets.
         
         Args:
             train_df: DataFrame for training data.
             val_df: DataFrame for validation data.
+            test_df: DataFrame for test set
             text_col: Column index for text input.
             label_col: Column index for labels.
             batch_size: Batch size for loading data.
@@ -90,7 +91,9 @@ class CustomDataLoader:
         self.val_dataset = CustomTextDataset(val_df, text_col, label_col, 
                                              labels_lookup_dict=self.train_dataset.labels_lookup_dict, 
                                              block_size=self.train_dataset.block_size)
-
+        self.test_dataset = CustomTextDataset(test_df, text_col, label_col, 
+                                             labels_lookup_dict=self.train_dataset.labels_lookup_dict, 
+                                             block_size=self.train_dataset.block_size)
     
     @staticmethod
     def collate_fn(batch):
@@ -128,4 +131,14 @@ class CustomDataLoader:
         """
         self.val_loader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=shuffle, collate_fn=self.collate_fn)
         return self.val_loader
-
+    
+    def get_test_loader(self, shuffle: bool = False):
+        """
+        Returns a DataLoader for the test dataset containing a batch of input_tokens, labels and corresponding mask tensor.
+        Args:
+            shuffle (bool): Whether to shuffle the data at each epoch. Defaults to False.
+        Returns:
+            DataLoader: DataLoader for the validation dataset.
+        """
+        self.test_loader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=shuffle, collate_fn=self.collate_fn)
+        return self.test_loader

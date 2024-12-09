@@ -205,19 +205,19 @@ class Block(nn.Module):
         Returns:
             torch.Tensor: Output tensor of shape (B, T, n_embds), with the same shape as the input.
         """
-        #pre-LN work: inputs of attention and FFW layers are normalized with the original outputs added after the main layers 
-        # Apply multi-head attention and add residual connection
-        x = x + self.multi_headed_attn(self.ln1(x), mask)
-        # Apply feed-forward network and add residual connection
-        x = x + self.ffw_layer(self.ln2(x))
-        return x
+        # #pre-LN work: inputs of attention and FFW layers are normalized with the original outputs added after the main layers 
+        # # Apply multi-head attention and add residual connection
+        # x = x + self.multi_headed_attn(self.ln1(x), mask)
+        # # Apply feed-forward network and add residual connection
+        # x = x + self.ffw_layer(self.ln2(x))
+        # return x
 
         #post-LN work: skip connection is added to Self-attention and FFW outputs and result is layer normalized
-        # Apply multi-head attention and add residual connection, then layer normalized
-        # x = self.ln1(x + self.multi_headed_attn(x, mask))
-        # # Apply feed-forward network and add residual connection, then layer normalized
-        # x = self.ln2(x + self.ffw_layer(x))
-        # return x
+        #Apply multi-head attention and add residual connection, then layer normalized
+        x = self.ln1(x + self.multi_headed_attn(x, mask))
+        # Apply feed-forward network and add residual connection, then layer normalized
+        x = self.ln2(x + self.ffw_layer(x))
+        return x
 
 
 class GPTDecoder(nn.Module):
@@ -321,13 +321,13 @@ class GPTDecoder(nn.Module):
             x = block(x, mask)  # Pass mask to each block individually
 
         # version with an additional layer normalization before the classifier
-        # layer_norm_out = self.layernorm(x)  # (B, T, n_embds)
-        # # Pooling to get a single vector per sequence for classification
-        # pooled_output = layer_norm_out.mean(dim=1)  # Average pooling across T dimension
-
-        # version with no additional layer normalization before the classifier
+        layer_norm_out = self.layernorm(x)  # (B, T, n_embds)
         # Pooling to get a single vector per sequence for classification
-        pooled_output = x.mean(dim=1)  # Average pooling across T dimension
+        pooled_output = layer_norm_out.mean(dim=1)  # Average pooling across T dimension
+
+        # # version with no additional layer normalization before the classifier
+        # # Pooling to get a single vector per sequence for classification
+        # pooled_output = x.mean(dim=1)  # Average pooling across T dimension
 
 
         logits = self.classifier(pooled_output)  # B, n_embds -> B, num_classes
